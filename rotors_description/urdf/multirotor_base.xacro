@@ -66,12 +66,6 @@
         </geometry>
       </visual>
 
-      <collision>
-        <origin xyz="0 0 0" rpy="0 0 0" />
-        <geometry>
-          <box size="${body_width} ${body_width} ${body_height}" /> <!-- [m] [m] [m] -->
-        </geometry>
-      </collision>
     </link>
 
     <!-- attach multirotor_base_plugin to the base_link -->
@@ -114,11 +108,7 @@
           </xacro:unless>
         </geometry>
       </visual>
-      <collision>
-        <geometry>
-          <cylinder length="0.005" radius="${radius_rotor}" /> <!-- [m] -->
-        </geometry>
-      </collision>
+
     </link>
     <gazebo>
       <plugin name="${robot_namespace}_${suffix}_motor_model" filename="librotors_gazebo_motor_model.so">

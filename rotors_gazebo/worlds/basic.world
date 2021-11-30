@@ -1,12 +1,12 @@
 <?xml version="1.0" ?>
 <sdf version="1.4">
   <world name="default">
-    <include>
+    <!-- <include>
       <uri>model://ground_plane</uri>
-    </include>
-    <include>
+    </include> -->
+    <!-- <include>
       <uri>model://sun</uri>
-    </include>
+    </include> -->
 
     <!-- Only one ROS interface plugin is required per world, as any other plugin can connect a Gazebo
          topic to a ROS topic (or vise versa). -->
@@ -35,7 +35,7 @@
       </ode>
       <max_step_size>0.01</max_step_size>
       <real_time_factor>1</real_time_factor>
-      <real_time_update_rate>100</real_time_update_rate>
+      <real_time_update_rate>1000</real_time_update_rate>
       <gravity>0 0 -9.8</gravity>
     </physics>
   </world>
