@@ -1,0 +1,175 @@
+<?xml version="1.0"?>
+<!--
+  Author: Massimiliano Pandolfo
+  Version 2.0
+  The cable is no longer a link
+-->
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <!-- Properties -->
+  <xacro:property name="cable_length" value="0.7" /> <!-- [m] -->
+  <xacro:property name="cable_radius" value="0.005" /> <!-- [m] -->
+  <xacro:property name="cable_mass" value="0.05" /> <!-- [kg] -->
+  <xacro:property name="sphere_radius" value="0.005" /> <!-- [m] -->
+  <xacro:property name="sphere_mass" value="0.01" /> <!-- [kg] -->
+  <xacro:property name="x_payload" value="1.8"/> <!-- [m] -->
+  <xacro:property name="y_payload" value="0.05"/> <!-- [m] -->
+  <xacro:property name="z_payload" value="0.03"/> <!-- [m] -->
+  <xacro:property name="payload_mass" value="0.4"/> <!-- [kg] -->
+
+
+  <!-- Macro that creates the payload -->
+  <xacro:macro name="cuboid_macro" params="x y z mass">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="${mass}"/>
+        <inertia
+        ixx="${mass*(y*y+z*z)/12}" ixy="0.0" ixz="0.0"
+        iyy="${mass*(x*x+z*z)/12}" iyz="0.0"
+        izz="${mass*(y*y+x*x)/12}"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <box size="${x} ${y} ${z}"/>
+      </geometry>
+    </visual>
+  </xacro:macro>
+
+
+  <!-- Macro for the auxiliary links that make up a ball joint-->
+  <xacro:macro name="hinge_macro" params="r mass">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="${mass}"/>
+        <inertia
+        ixx="${0.4 * mass * r * r}" ixy="0.0" ixz="0.0"
+        iyy="${0.4 * mass * r * r}" iyz="0.0"
+        izz="${0.4 * mass * r * r}"/>
+    </inertial>
+
+    <visual>
+      <geometry>
+        <sphere radius="${r}"/>
+      </geometry>
+    </visual>
+
+</xacro:macro>
+
+  <!-- Macro that connects a cable to a UAV -->
+  <xacro:macro name="cable_macro"
+    params="robot_namespace uav_body_frame">
+
+    <!--                              LINKS                              -->
+
+    <link name="${robot_namespace}/aux_uav_x">
+      <xacro:hinge_macro r="${sphere_radius}" mass="${sphere_mass}"/>
+    </link>
+
+    <link name="${robot_namespace}/aux_uav_y">
+      <xacro:hinge_macro r="${sphere_radius}" mass="${sphere_mass}"/>
+    </link>
+
+    <link name="${robot_namespace}/cable">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="${cable_mass}"/>
+        <inertia
+          ixx="${cable_mass * (cable_length * cable_length + 3 * cable_radius * cable_radius) / 12}" ixy="0.0" ixz="0.0"
+          iyy="${cable_mass * (cable_length * cable_length + 3 * cable_radius * cable_radius) / 12}" iyz="0.0"
+          izz="${cable_mass * cable_radius * cable_radius / 2}"/>
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="${cable_length}" radius="${cable_radius}"/>
+        </geometry>
+      </visual>
+    </link>
+
+    <link name="${robot_namespace}/aux_load_x">
+      <xacro:hinge_macro r="${sphere_radius}" mass="${sphere_mass}"/>
+    </link>
+
+    <link name="${robot_namespace}/aux_load_y">
+      <xacro:hinge_macro r="${sphere_radius}" mass="${sphere_mass}"/>
+    </link>
+
+    <!--                              JOINTS                              -->
+
+    <!-- y axis rotation between UAV and cable -->
+    <joint name="${robot_namespace}/joint_uav_y" type="continuous">
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <axis xyz="0 1 0" />
+      <parent link="${robot_namespace}/aux_uav_x" />
+      <child link="${uav_body_frame}" />
+    </joint>
+
+    <!-- x axis rotation between UAV and cable -->
+    <joint name="${robot_namespace}/joint_uav_x" type="continuous">
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <axis xyz="1 0 0" />
+      <parent link="${robot_namespace}/aux_uav_y" />
+      <child link="${robot_namespace}/aux_uav_x" />
+    </joint>
+
+    <!-- Fixed joint between aux_uav_y and aux_load_x -->
+<!--     <joint name="${robot_namespace}/joint_cable" type="fixed">
+      <origin xyz="0 0 ${cable_length}" rpy="0 0 0" />
+      <parent link="${robot_namespace}/aux_load_x" />
+      <child link="${robot_namespace}/aux_uav_y" />
+    </joint> -->
+
+    <!-- Fixed joint between cable and UAV -->
+    <joint name="${robot_namespace}/joint_uav_cable" type="fixed">
+      <origin xyz="0 0 ${cable_length/2}" rpy="0 0 0" />
+      <parent link="${robot_namespace}/cable" />
+      <child link="${robot_namespace}/aux_uav_y" />
+    </joint>
+
+    <!-- Fixed joint between cable and payload -->
+    <joint name="${robot_namespace}/joint_bar_cable" type="fixed">
+      <origin xyz="0 0 ${cable_length/2}" rpy="0 0 0" />
+      <parent link="${robot_namespace}/aux_load_x" />
+      <child link="${robot_namespace}/cable" />
+    </joint>
+
+    <!-- x axis rotation between cable and payload -->
+    <joint name="${robot_namespace}/joint_load_x" type="continuous">
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <axis xyz="1 0 0" />
+      <parent link="${robot_namespace}/aux_load_y" />
+      <child link="${robot_namespace}/aux_load_x" />
+    </joint>
+
+  </xacro:macro>
+
+
+  <xacro:macro name="payload_macro" params="link1 link2">
+
+    <!--                              LINKS                              -->
+    <link name="bar">
+      <xacro:cuboid_macro x="${x_payload}" y="${y_payload}" z="${z_payload}" mass="${payload_mass}"/>
+    </link>
+
+    <!--                              JOINTS                              -->
+
+    <!-- y axis rotation between cable 1 and payload -->
+    <joint name="bar/joint_load_y_1" type="continuous">
+      <origin xyz="${x_payload/2 - sphere_radius} 0 ${z_payload/2}" rpy="0 0 0" />
+      <axis xyz="0 1 0" />
+      <parent link="bar" />
+      <child link="${link1}" />
+    </joint>
+
+    <!-- y axis rotation between cable 2 and payload -->
+    <joint name="bar/joint_load_y_2" type="continuous">
+      <origin xyz="${-x_payload/2 + sphere_radius} 0 ${z_payload/2}" rpy="0 0 0" />
+      <axis xyz="0 1 0" />
+      <parent link="bar" />
+      <child link="${link2}" />
+    </joint>
+
+  </xacro:macro>
+
+</robot>
