@@ -2,7 +2,7 @@
 
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
 
-  <xacro:macro name="ball_macro" params="namespace parent_link ball_radius ball_weight *origin">
+  <xacro:macro name="ball_macro" params="namespace parent_link ball_radius ball_weight cable_length parent_frame_id child_frame_id *origin">
     <link name="${namespace}/ball_link">
       <inertial>
         <mass value="${ball_weight}" />
@@ -26,12 +26,24 @@
         </geometry>
       </collision>
     </link>
-    <joint name="${namespace}_cable_joint" type="floating">
+    <joint name="${namespace}/ball_joint" type="fixed">
       <xacro:insert_block name="origin" />
       <parent link="${parent_link}" />
       <child link="${namespace}/ball_link" />
     </joint>
-    <gazebo reference="ball">
+    <gazebo>
+      <plugin name="${namespace}_cable_plugin" filename="librotors_gazebo_cable_plugin.so">
+        <robotNamespace>${namespace}</robotNamespace>
+        <jointName>${namespace}/ball_joint</jointName>
+        <linkName>${namespace}/ball_link</linkName>
+        <ballRadius>${ball_radius}</ballRadius>
+        <ballWeight>${ball_weight}</ballWeight>
+        <cableLength>${cable_length}</cableLength>
+        <parentFrameId>${parent_frame_id}</parentFrameId>
+        <childFrameId>${child_frame_id}</childFrameId>
+      </plugin>
+    </gazebo>
+    <gazebo reference="${namespace}/ball_link">
       <mu1>10</mu1>
       <mu2>10</mu2>
       <material>Gazebo/Red</material>

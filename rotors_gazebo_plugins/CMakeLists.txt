@@ -269,6 +269,14 @@ if (NOT NO_ROS)
   list(APPEND targets_to_install rotors_gazebo_bag_plugin)
 endif()
 
+#======================================= CABLE PLUGIN ========================================//
+if (NOT NO_ROS)
+  add_library(rotors_gazebo_cable_plugin SHARED src/gazebo_cable_plugin.cpp)
+  target_link_libraries(rotors_gazebo_cable_plugin ${target_linking_LIBRARIES}  ${OpenCV_LIBRARIES})
+  add_dependencies(rotors_gazebo_cable_plugin ${catkin_EXPORTED_TARGETS})
+  list(APPEND targets_to_install rotors_gazebo_cable_plugin)
+endif()
+
 #================================= CONTROLLER INTERFACE PLUGIN ==================================//
 if (NOT NO_ROS)
   add_library(rotors_gazebo_controller_interface SHARED src/gazebo_controller_interface.cpp)

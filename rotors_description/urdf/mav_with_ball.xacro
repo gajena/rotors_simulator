@@ -2,15 +2,18 @@
 
 <robot name="$(arg mav_name)" xmlns:xacro="http://ros.org/wiki/xacro">
   <!-- Instantiate the mav-->
-  <xacro:include filename="$(find rotors_description)/urdf/ball.xacro" />
 
   <xacro:include filename="$(find rotors_description)/urdf/$(arg mav_name)_base.xacro" />
+  <xacro:include filename="$(find rotors_description)/urdf/ball.xacro" />
 
   <xacro:ball_macro
-    namespace="${namespace}/ball"
-    parent_link="${namespace}/base_link"
+    namespace="$(arg mav_name)"
+    parent_link="$(arg mav_name)/base_link"
     ball_radius="0.05"
-    ball_weight="0.1">
+    ball_weight="0.1"
+    cable_length="1.0"
+    parent_frame_id="$(arg mav_name)/base_link"
+    child_frame_id="$(arg mav_name)/ball_link">
     <origin xyz="0.0 0.0 -1.0" rpy="0.0 0.0 0.0" />
   </xacro:ball_macro>
 </robot>
