@@ -2,13 +2,13 @@
 
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
 
-  <xacro:macro name="ball_macro" params="namespace parent_link ball_radius ball_weight cable_length parent_frame_id child_frame_id *origin">
+  <xacro:macro name="ball_macro" params="namespace parent_link ball_radius ball_mass cable_length *origin">
     <link name="${namespace}/ball_link">
       <inertial>
-        <mass value="${ball_weight}" />
+        <mass value="${ball_mass}" />
         <!-- center of mass (com) is defined w.r.t. link local coordinate system -->
         <!-- give a little y-offset to make the top precess -->
-        <origin xyz="0 0 0" /> 
+        <origin xyz="0 0 0" rpy="0 0 0" /> 
         <inertia  ixx="1" ixy="0.0"  ixz="0.0"  iyy="1"  iyz="0.0"  izz="1" />
       </inertial>
       <visual>
@@ -26,7 +26,7 @@
         </geometry>
       </collision>
     </link>
-    <joint name="${namespace}/ball_joint" type="fixed">
+    <joint name="${namespace}/ball_joint" type="floating">
       <xacro:insert_block name="origin" />
       <parent link="${parent_link}" />
       <child link="${namespace}/ball_link" />
@@ -34,13 +34,10 @@
     <gazebo>
       <plugin name="${namespace}_cable_plugin" filename="librotors_gazebo_cable_plugin.so">
         <robotNamespace>${namespace}</robotNamespace>
-        <jointName>${namespace}/ball_joint</jointName>
+        <parentLinkName>${namespace}/base_link</parentLinkName>
         <linkName>${namespace}/ball_link</linkName>
-        <ballRadius>${ball_radius}</ballRadius>
-        <ballWeight>${ball_weight}</ballWeight>
+        <ballMass>${ball_mass}</ballMass>
         <cableLength>${cable_length}</cableLength>
-        <parentFrameId>${parent_frame_id}</parentFrameId>
-        <childFrameId>${child_frame_id}</childFrameId>
       </plugin>
     </gazebo>
     <gazebo reference="${namespace}/ball_link">
