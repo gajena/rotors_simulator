@@ -12,6 +12,8 @@
     ball_radius="0.05"
     ball_mass="0.1"
     cable_length="1.0"
+    parent_frame_id="$(arg mav_name)/base_link"
+    child_frame_id="$(arg mav_name)/ball_link">
     <origin xyz="0.0 0.0 -1.0" rpy="0.0 0.0 0.0" />
   </xacro:ball_macro>
 </robot>

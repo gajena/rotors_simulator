@@ -5,6 +5,7 @@
 
 #include "ConnectGazeboToRosTopic.pb.h"
 #include "Vector3dStamped.pb.h"
+#include "TransformStampedWithFrameIds.pb.h"
 
 namespace gazebo {
 void GazeboCablePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
@@ -45,6 +46,8 @@ void GazeboCablePlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf) {
   getSdfParam<double>(_sdf, "ballMass", ball_mass_, ball_mass_);
   getSdfParam<double>(_sdf, "cableLength", cable_length_, cable_length_);
   getSdfParam<std::string>(_sdf, "poseTopic", pose_pub_topic_, pose_pub_topic_);
+  getSdfParam<std::string>(_sdf, "parentFrameId", parent_frame_id_, parent_frame_id_);
+  getSdfParam<std::string>(_sdf, "childFrameId", child_frame_id_, child_frame_id_);
 
   mav_mass_ = parent_link_->GetInertial()->Mass();
 
@@ -80,7 +83,12 @@ void GazeboCablePlugin::OnUpdate(const common::UpdateInfo& _info) {
   ignition::math::Vector3d W_angular_velocity_P_C = parent_link_->WorldInertiaMatrix().Inverse() * W_angular_momentum_P_C;
   ignition::math::Vector3d W_vel_P_C = W_angular_velocity_P_C.Cross(W_unit_pos_P_C);
 
-  if (W_pos_P_C.Length() >= (cable_length_- 1e-3)) {
+  ignition::math::Vector3d W_fixed_pos_P_C = W_pos_P_C * cable_length_ / W_pos_P_C.Length();
+  ignition::math::Quaterniond W_fixed_rot_P_C = (W_pose_W_C - W_pose_W_P).Rot();
+  ignition::math::Pose3d W_fixed_pose_P_C(W_fixed_pos_P_C, W_fixed_rot_P_C);
+
+  if (W_pos_P_C.Length() >= (cable_length_ - 1e-3))
+  {
     //calculation of thrust
     ignition::math::Vector3d f = parent_link_->WorldForce() - (ball_mass_ + mav_mass_) * world_->Gravity();
 
@@ -89,9 +97,6 @@ void GazeboCablePlugin::OnUpdate(const common::UpdateInfo& _info) {
     ignition::math::Vector3d W_accel_W_C = (W_force_W_C / (ball_mass_ + mav_mass_)) + world_->Gravity();
     ignition::math::Vector3d tension = ball_mass_ * (W_accel_W_C - world_->Gravity());
 
-    ignition::math::Vector3d W_fixed_pos_P_C = W_pos_P_C * cable_length_ / W_pos_P_C.Length();
-    ignition::math::Quaterniond W_fixed_rot_P_C = (W_pose_W_C - W_pose_W_P).Rot();
-    ignition::math::Pose3d W_fixed_pose_P_C(W_fixed_pos_P_C, W_fixed_rot_P_C);
     ignition::math::Vector3d W_fixed_vel_W_C = W_vel_W_C - (W_vel_W_C - W_vel_W_P).Dot(W_unit_pos_P_C) * W_unit_pos_P_C;
 
     bool is_paused = world_->IsPaused();
@@ -117,6 +122,40 @@ void GazeboCablePlugin::OnUpdate(const common::UpdateInfo& _info) {
   pose_msg.mutable_position()->set_y(W_pose_W_C.Y());
   pose_msg.mutable_position()->set_z(W_pose_W_C.Z());
   pose_pub_->Publish(pose_msg);
+
+  //==============================================//
+  //========= BROADCAST TRANSFORM MSG ============//
+  //==============================================//
+
+  gz_geometry_msgs::TransformStampedWithFrameIds
+      transform_stamped_with_frame_ids_msg;
+  transform_stamped_with_frame_ids_msg.mutable_header()->CopyFrom(
+      pose_msg.header());
+  transform_stamped_with_frame_ids_msg.mutable_transform()
+      ->mutable_translation()
+      ->set_x(W_fixed_pose_P_C.X());
+  transform_stamped_with_frame_ids_msg.mutable_transform()
+      ->mutable_translation()
+      ->set_y(W_fixed_pose_P_C.Y());
+  transform_stamped_with_frame_ids_msg.mutable_transform()
+      ->mutable_translation()
+      ->set_z(W_fixed_pose_P_C.Z());
+  transform_stamped_with_frame_ids_msg.mutable_transform()
+      ->mutable_rotation()
+      ->set_x(W_fixed_pose_P_C.Rot().X());
+  transform_stamped_with_frame_ids_msg.mutable_transform()
+      ->mutable_rotation()
+      ->set_y(W_fixed_pose_P_C.Rot().Y());
+  transform_stamped_with_frame_ids_msg.mutable_transform()
+      ->mutable_rotation()
+      ->set_z(W_fixed_pose_P_C.Rot().Z());
+  transform_stamped_with_frame_ids_msg.mutable_transform()
+      ->mutable_rotation()
+      ->set_w(W_fixed_pose_P_C.Rot().W());
+  transform_stamped_with_frame_ids_msg.set_parent_frame_id(parent_frame_id_);
+  transform_stamped_with_frame_ids_msg.set_child_frame_id(child_frame_id_);
+
+  broadcast_transform_pub_->Publish(transform_stamped_with_frame_ids_msg);
 }
 
 void GazeboCablePlugin::CreatePubsAndSubs() {
@@ -137,6 +176,10 @@ void GazeboCablePlugin::CreatePubsAndSubs() {
       gz_std_msgs::ConnectGazeboToRosTopic::VECTOR_3D_STAMPED);
   connect_gazebo_to_ros_topic_pub->Publish(connect_gazebo_to_ros_topic_msg,
                                            true);
+
+  broadcast_transform_pub_ =
+      node_handle_->Advertise<gz_geometry_msgs::TransformStampedWithFrameIds>(
+          "~/" + kBroadcastTransformSubtopic, 1);
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboCablePlugin);

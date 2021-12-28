@@ -14,21 +14,25 @@
 namespace gazebo {
 
 static const std::string kDefaultPosePubTopic = "ball/pose";
+static const std::string kDefaultParentFrameId = "world";
+static const std::string kDefaultChildFrameId = "ball_link";
 
 class GazeboCablePlugin : public ModelPlugin {
  public:
-  GazeboCablePlugin()
-      : ModelPlugin(),
-        pose_pub_topic_(kDefaultPosePubTopic),
-        pubs_and_subs_created_(false),
-        ball_mass_(0.0),
-        mav_mass_(0.0),
-        cable_length_(0.0) {}
+   GazeboCablePlugin()
+       : ModelPlugin(),
+         pose_pub_topic_(kDefaultPosePubTopic),
+         parent_frame_id_(kDefaultParentFrameId),
+         child_frame_id_(kDefaultChildFrameId),
+         pubs_and_subs_created_(false),
+         ball_mass_(0.0),
+         mav_mass_(0.0),
+         cable_length_(0.0) {}
 
-  ~GazeboCablePlugin() {};
+   ~GazeboCablePlugin(){};
 
-  void InitializeParams();
-  void Publish();
+   void InitializeParams();
+   void Publish();
 
  protected:
   void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
@@ -40,6 +44,8 @@ class GazeboCablePlugin : public ModelPlugin {
 
   std::string namespace_;
   std::string pose_pub_topic_;
+  std::string parent_frame_id_;
+  std::string child_frame_id_;
 
   double mav_mass_;
   double ball_mass_;
@@ -48,6 +54,7 @@ class GazeboCablePlugin : public ModelPlugin {
   gazebo::transport::NodePtr node_handle_;
 
   gazebo::transport::PublisherPtr pose_pub_;
+  gazebo::transport::PublisherPtr broadcast_transform_pub_;
 
   physics::WorldPtr world_;
   physics::ModelPtr model_;

@@ -2,7 +2,7 @@
 
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
 
-  <xacro:macro name="ball_macro" params="namespace parent_link ball_radius ball_mass cable_length *origin">
+  <xacro:macro name="ball_macro" params="namespace parent_link ball_radius ball_mass cable_length parent_frame_id child_frame_id *origin">
     <link name="${namespace}/ball_link">
       <inertial>
         <mass value="${ball_mass}" />
@@ -38,6 +38,8 @@
         <linkName>${namespace}/ball_link</linkName>
         <ballMass>${ball_mass}</ballMass>
         <cableLength>${cable_length}</cableLength>
+        <parentFrameId>${parent_frame_id}</parentFrameId>
+        <childFrameId>${child_frame_id}</childFrameId>
       </plugin>
     </gazebo>
     <gazebo reference="${namespace}/ball_link">
