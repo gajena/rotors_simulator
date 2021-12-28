@@ -25,7 +25,7 @@ class GazeboCablePlugin : public ModelPlugin {
         mav_mass_(0.0),
         cable_length_(0.0) {}
 
-  GazeboCablePlugin::~GazeboCablePlugin() {}
+  ~GazeboCablePlugin() {};
 
   void InitializeParams();
   void Publish();
