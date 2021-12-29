@@ -64,6 +64,16 @@ void GazeboHoverBallPlugin::OnUpdate(const common::UpdateInfo& _info) {
   ignition::math::Vector3d velocity = link_->WorldLinearVel();
   ignition::math::Vector3d accel = link_->WorldLinearAccel();
 
+  bool is_paused = world_->IsPaused();
+  if (!is_paused) {
+    world_->SetPaused(true);
+  }
+  link_->GetInertial()->SetMass(payload_mass_);
+  link_->UpdateMass();
+  link_->AddForce(ignition::math::Vector3d(0, 0, force_));
+  world_->SetPaused(is_paused);
+
+
   gz_geometry_msgs::Vector3dStamped state_msg;
   state_msg.mutable_header()->set_frame_id("world");
   state_msg.mutable_header()->mutable_stamp()->set_sec((world_->SimTime()).sec);
@@ -119,13 +129,6 @@ void GazeboHoverBallPlugin::LoadCallback(GzWindSpeedMsgPtr& load_msg) {
   }
   payload_mass_ = load_msg->velocity().x() + ball_mass_;
   force_ = load_msg->velocity().z();
-  bool is_paused = world_->IsPaused();
-  if (!is_paused) {
-    world_->SetPaused(true);
-  }
-  link_->AddForce(ignition::math::Vector3d(0, 0, force_));
-  link_->GetInertial()->SetMass(payload_mass_);
-  world_->SetPaused(is_paused);
 }
 
 GZ_REGISTER_MODEL_PLUGIN(GazeboHoverBallPlugin);
